@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
+	"sort"
 	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 // read more in gamestate
@@ -33,11 +33,20 @@ var (
 
 var currentmap gamemap
 
+type sprite struct {
+	pos     pos
+	texture *ebiten.Image
+	typeOf  int
+}
+
 type gamemap struct {
 	// map data (2D array)
 	//
 	// 0 = not decided, 1 = mountains, 2 = plains, 3 = hills, 4 = forests
-	data [100][100]int
+	data    [100][100]int
+	texture [100][100]*ebiten.Image
+
+	sprites []sprite
 }
 
 func gameinit() {
@@ -80,6 +89,8 @@ var selected int
 
 func (g *Game) Draw(screen *ebiten.Image) {
 
+	parseTextureAndSprites()
+
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
 		lcamera.pos.float_x -= 10
 	}
@@ -97,12 +108,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	if ebiten.IsKeyPressed(ebiten.Key1) {
-		selected = 1
-	} else if ebiten.IsKeyPressed(ebiten.Key2) {
 		selected = 2
-	} else if ebiten.IsKeyPressed(ebiten.Key3) {
+	} else if ebiten.IsKeyPressed(ebiten.Key2) {
 		selected = 3
-	} else if ebiten.IsKeyPressed(ebiten.Key4) {
+	} else if ebiten.IsKeyPressed(ebiten.Key0) {
 		selected = 0
 	}
 
@@ -115,38 +124,54 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButton1) {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+		if ebiten.IsKeyPressed(ebiten.KeyShift) {
+			// Define a radius for deleting sprites
+			const deleteRadius = 50.0
 
+			// Calculate the cursor position in world coordinates
+			cursorWorldX := cursor.float_x + lcamera.pos.float_x - screenWidth/2
+			cursorWorldY := cursor.float_y + lcamera.pos.float_y - screenHeight/2
+
+			// Iterate through the sprites
+			for i := 0; i < len(currentmap.sprites); i++ {
+				dx := currentmap.sprites[i].pos.float_x - cursorWorldX
+				dy := currentmap.sprites[i].pos.float_y - cursorWorldY
+				distanceSquared := dx*dx + dy*dy
+
+				// Nullify the sprite if within the delete radius
+				if distanceSquared <= deleteRadius*deleteRadius {
+					currentmap.sprites[i].texture = nil
+				}
+			}
+		} else {
+			// Add a new sprite at the cursor position
+			currentmap.sprites = append(
+				currentmap.sprites,
+				createSprite(createPos(cursor.float_x-40, cursor.float_y-80), 0),
+			)
+		}
 	}
 
+	//TODO redo this comment and make this into a function
 	for i := 0; i < 100; i++ {
-
 		for j := 0; j < 100; j++ {
+			if currentmap.texture[i][j] != nil {
 
-			switch currentmap.data[i][j] {
-			case 2:
-				currenttilecolor = mlightgreen
-			case 3:
-				currenttilecolor = mbrown
-			case 1:
-				currenttilecolor = mdarkgray
-			case 4:
-				currenttilecolor = mdarkgreen
-			default:
-				currenttilecolor = uitransparent
+				drawTile(screen, currentmap.texture[i][j], i, j)
 
 			}
 
-			vector.DrawFilledRect(
-				screen,
-				(float32(j)*screendivisor+lcamera.pos.float_x*lcamera.zoom)-screenWidth/2,
-				(float32(i)*screendivisor+lcamera.pos.float_y*lcamera.zoom)-screenHeight/2,
-				screendivisor*lcamera.zoom,
-				screendivisor*lcamera.zoom,
-				currenttilecolor,
-				false,
-			)
 		}
+
+	}
+
+	for i := 0; i < len(currentmap.sprites); i++ {
+		//fmt.Println(len(currentmap.sprites))
+		sort.Slice(currentmap.sprites, func(i, j int) bool {
+			return currentmap.sprites[i].pos.float_y < currentmap.sprites[j].pos.float_y
+		})
+		drawSprite(screen, currentmap.sprites[i].texture, currentmap.sprites[i].pos)
 	}
 
 	fps := ebiten.CurrentFPS()
@@ -154,7 +179,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	ebitenutil.DebugPrint(screen, fpsText)
 
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
-		write()
+		writeMapData()
 	}
 }
 
@@ -163,48 +188,9 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 	return outsideWidth, outsideHeight
 }
 
-func write() {
-	// Define the file name
-	filename := "example.txt"
-
-	// Open the file (or create it if it doesn't exist) in write-only mode
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		fmt.Println("Error opening the file:", err)
-		return
-	}
-	defer file.Close() // Ensure file is closed after writing is done
-
-	// Iterate over each row of the map data (assuming `currentmap.data` is 100x100)
-	for _, row := range currentmap.data {
-		// Write each cell in the row separated by ", "
-		for j, value := range row {
-			if j > 0 {
-				_, err = fmt.Fprintf(file, ", ")
-				if err != nil {
-					fmt.Println("Error writing to the file:", err)
-					return
-				}
-			}
-			_, err = fmt.Fprintf(file, "%d", value)
-			if err != nil {
-				fmt.Println("Error writing to the file:", err)
-				return
-			}
-		}
-		// End the line after each row of numbers
-		_, err = fmt.Fprintf(file, "\n")
-		if err != nil {
-			fmt.Println("Error writing to the file:", err)
-			return
-		}
-	}
-
-	fmt.Println("File written successfully!")
-}
-
 func main() {
 	gameinit()
+	readMapData()
 	ebiten.SetWindowSize(1600, 900)
 	ebiten.SetWindowTitle("map maker")
 	if err := ebiten.RunGame(&Game{}); err != nil {
