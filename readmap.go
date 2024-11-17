@@ -20,7 +20,7 @@ func writeMapData() {
 	defer file.Close()
 
 	// Write map data
-	for _, row := range currentmap.data {
+	for _, row := range globalGameState.currentmap.data {
 		for j, value := range row {
 			if j > 0 {
 				_, err = fmt.Fprintf(file, ", ")
@@ -50,7 +50,7 @@ func writeMapData() {
 	}
 
 	// Write sprite data
-	for _, sprite := range currentmap.sprites {
+	for _, sprite := range globalGameState.currentmap.sprites {
 		_, err = fmt.Fprintf(file, "%d,%f,%f\n", sprite.typeOf, sprite.pos.float_x, sprite.pos.float_y)
 		if err != nil {
 			fmt.Println("Error writing sprite to the file:", err)
@@ -72,7 +72,7 @@ func readMapData() {
 
 	scanner := bufio.NewScanner(file)
 	isReadingSprites := false
-	currentmap.sprites = nil // Clear existing sprites
+	globalGameState.currentmap.sprites = nil // Clear existing sprites
 
 	y := 0
 
@@ -115,7 +115,7 @@ func readMapData() {
 
 			// Create the sprite and add it to the map
 			sprite := createSprite(createPos(float32(floatX), float32(floatY)), typeOf)
-			currentmap.sprites = append(currentmap.sprites, sprite)
+			globalGameState.currentmap.sprites = append(globalGameState.currentmap.sprites, sprite)
 		} else {
 			// Process map data
 			values := strings.Split(line, ",")
@@ -131,7 +131,7 @@ func readMapData() {
 					return
 				}
 
-				currentmap.data[y][x] = intValue
+				globalGameState.currentmap.data[y][x] = intValue
 			}
 			y++
 		}
@@ -142,6 +142,8 @@ func readMapData() {
 		fmt.Println("Error reading the file:", err)
 		return
 	}
+
+	globalGameState.currentmap.height, globalGameState.currentmap.width = 100, 100
 
 	fmt.Println("File read successfully!")
 }

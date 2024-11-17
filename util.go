@@ -151,8 +151,6 @@ func createPos(x, y float32) pos {
 	}
 }
 
-var on bool
-
 func inSlide(s *slider) bool {
 
 	if curspos.float_x >= s.pos.float_x+10 &&

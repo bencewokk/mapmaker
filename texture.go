@@ -62,32 +62,32 @@ func parseTextureAndSprites() {
 		Grass_S1, Grass_S2, Grass_S3, Grass_S6, Grass_S8, Grass_S4, Grass_S5, Grass_S7,
 	}
 
-	for i := 0; i < 100; i++ {
-		for j := 0; j < 100; j++ {
+	for i := 0; i < globalGameState.currentmap.height; i++ {
+		for j := 0; j < globalGameState.currentmap.width; j++ {
 
 			var textureID string = ""
 
-			if currentmap.data[i][j] == 3 {
+			if globalGameState.currentmap.data[i][j] == 3 {
 				// Check for out-of-bounds for each neighboring tile
-				if currentmap.data[i-1][j] == 3 { // upper
+				if globalGameState.currentmap.data[i-1][j] == 3 { // upper
 					textureID += "D"
 				} else {
 					textureID += "G"
 				}
 
-				if currentmap.data[i][j-1] == 3 { // left
+				if globalGameState.currentmap.data[i][j-1] == 3 { // left
 					textureID += "D"
 				} else {
 					textureID += "G"
 				}
 
-				if currentmap.data[i][j+1] == 3 { // right
+				if globalGameState.currentmap.data[i][j+1] == 3 { // right
 					textureID += "D"
 				} else {
 					textureID += "G"
 				}
 
-				if currentmap.data[i+1][j] == 3 { // lower
+				if globalGameState.currentmap.data[i+1][j] == 3 { // lower
 					textureID += "D"
 				} else {
 					textureID += "G"
@@ -95,13 +95,13 @@ func parseTextureAndSprites() {
 
 				// Assign the appropriate texture based on the ID
 				if texture, exists := dryTransitionsTextures[textureID]; exists {
-					currentmap.texture[i][j] = texture
+					globalGameState.currentmap.texture[i][j] = texture
 				}
-			} else if currentmap.data[i][j] == 2 {
+			} else if globalGameState.currentmap.data[i][j] == 2 {
 				if calcChance(10) {
-					currentmap.texture[i][j] = grassTextures[rand.Int31n(5)]
+					globalGameState.currentmap.texture[i][j] = grassTextures[rand.Int31n(5)]
 				} else {
-					currentmap.texture[i][j] = grassTextures[rand.Int31n(3)+5]
+					globalGameState.currentmap.texture[i][j] = grassTextures[rand.Int31n(3)+5]
 				}
 			}
 		}
@@ -118,7 +118,6 @@ var trees = []*ebiten.Image{tree_S1, tree_S2}
 
 func createSprite(pos pos, typeOf int) sprite {
 	var texture *ebiten.Image
-	rand.Seed(1)
 	if typeOf == 0 {
 		texture = trees[rand.Intn(len(trees))]
 	}
@@ -131,8 +130,8 @@ func drawSprite(screen, t *ebiten.Image, pos pos) {
 	op.GeoM.Scale(1.5, 1.5)
 
 	op.GeoM.Translate(
-		float64(((pos.float_x)+lcamera.pos.float_x)-screenWidth/2),
-		float64(((pos.float_y)+lcamera.pos.float_y)-screenHeight/2))
+		float64(offsetsx(pos.float_x)),
+		float64(offsetsy(pos.float_y)))
 	screen.DrawImage(t, op)
 
 }
@@ -146,8 +145,8 @@ func drawTile(screen, t *ebiten.Image, i, j int) {
 	op.GeoM.Scale(scaleX, scaleY)
 
 	op.GeoM.Translate(
-		float64((float32(j)*screendivisor+lcamera.pos.float_x*lcamera.zoom)-screenWidth/2),
-		float64((float32(i)*screendivisor+lcamera.pos.float_y*lcamera.zoom)-screenHeight/2))
+		float64(offsetsx(float32(j*intscreendivisor-intscreendivisor/2))),
+		float64(offsetsy(float32(i*intscreendivisor-intscreendivisor/2))))
 	screen.DrawImage(t, op)
 }
 
