@@ -58,8 +58,27 @@ func writeMapData() {
 		}
 	}
 
+	// Write nodes
+	for _, n := range globalGameState.currentmap.nodes {
+		_, err = fmt.Fprintf(file, "NODE,%d,%f,%f\n", n.id, n.pos.float_x, n.pos.float_y)
+		if err != nil {
+			fmt.Printf("error writing node to the file: %v", err)
+			return
+		}
+	}
+
+	// Write paths
+	for _, p := range globalGameState.currentmap.paths {
+		_, err = fmt.Fprintf(file, "PATH,%d,%d,%f\n", p.nodeA.id, p.nodeB.id, p.cost)
+		if err != nil {
+			fmt.Printf("error writing path to the file: %v", err)
+			return
+		}
+	}
+
 	fmt.Println("File written successfully!")
 }
+
 func readMapData() {
 	filename := "map.txt"
 
@@ -72,29 +91,47 @@ func readMapData() {
 
 	scanner := bufio.NewScanner(file)
 	isReadingSprites := false
-	globalGameState.currentmap.sprites = nil // Clear existing sprites
+	isReadingNodes := false
+	isReadingPaths := false
+
+	// Clear existing data
+	globalGameState.currentmap.sprites = nil
+	globalGameState.currentmap.nodes = nil
+	globalGameState.currentmap.paths = nil
 
 	y := 0
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// Look for the sprite section header
-		if line == "---SPRITES---" {
+		// Look for section headers
+		switch line {
+		case "---SPRITES---":
 			isReadingSprites = true
+			isReadingNodes = false
+			isReadingPaths = false
+			continue
+		case "---NODES---":
+			isReadingSprites = false
+			isReadingNodes = true
+			isReadingPaths = false
+			continue
+		case "---PATHS---":
+			isReadingSprites = false
+			isReadingNodes = false
+			isReadingPaths = true
 			continue
 		}
 
-		// Process sprite data
+		// Process data based on current section
 		if isReadingSprites {
-			// Split sprite data by commas
+			// Process sprite data
 			values := strings.Split(line, ",")
 			if len(values) != 3 {
 				fmt.Println("Invalid sprite data:", line)
 				continue
 			}
 
-			// Parse the values for the sprite
 			typeOf, err := strconv.Atoi(strings.TrimSpace(values[0]))
 			if err != nil {
 				fmt.Println("Error parsing sprite type:", err)
@@ -113,9 +150,77 @@ func readMapData() {
 				continue
 			}
 
-			// Create the sprite and add it to the map
 			sprite := createSprite(createPos(float32(floatX), float32(floatY)), typeOf)
 			globalGameState.currentmap.sprites = append(globalGameState.currentmap.sprites, sprite)
+
+		} else if isReadingNodes {
+			// Process node data
+			values := strings.Split(line, ",")
+			if len(values) != 3 {
+				fmt.Println("Invalid node data:", line)
+				continue
+			}
+
+			if strings.TrimSpace(values[0]) != "NODE" {
+				fmt.Println("Unexpected node data:", line)
+				continue
+			}
+
+			id, err := strconv.Atoi(strings.TrimSpace(values[1]))
+			if err != nil {
+				fmt.Println("Error parsing node ID:", err)
+				continue
+			}
+
+			floatX, err := strconv.ParseFloat(strings.TrimSpace(values[2]), 32)
+			if err != nil {
+				fmt.Println("Error parsing node X position:", err)
+				continue
+			}
+
+			floatY, err := strconv.ParseFloat(strings.TrimSpace(values[3]), 32)
+			if err != nil {
+				fmt.Println("Error parsing node Y position:", err)
+				continue
+			}
+
+			node := createNode(id, createPos(float32(floatX), float32(floatY)))
+			globalGameState.currentmap.nodes = append(globalGameState.currentmap.nodes, node)
+
+		} else if isReadingPaths {
+			// Process path data
+			values := strings.Split(line, ",")
+			if len(values) != 4 {
+				fmt.Println("Invalid path data:", line)
+				continue
+			}
+
+			if strings.TrimSpace(values[0]) != "PATH" {
+				fmt.Println("Unexpected path data:", line)
+				continue
+			}
+
+			nodeAID, err := strconv.Atoi(strings.TrimSpace(values[1]))
+			if err != nil {
+				fmt.Println("Error parsing path nodeA ID:", err)
+				continue
+			}
+
+			nodeBID, err := strconv.Atoi(strings.TrimSpace(values[2]))
+			if err != nil {
+				fmt.Println("Error parsing path nodeB ID:", err)
+				continue
+			}
+
+			cost, err := strconv.ParseFloat(strings.TrimSpace(values[3]), 32)
+			if err != nil {
+				fmt.Println("Error parsing path cost:", err)
+				continue
+			}
+
+			path := createPath(findNodeByID(nodeAID), findNodeByID(nodeBID), float32(cost))
+			globalGameState.currentmap.paths = append(globalGameState.currentmap.paths, path)
+
 		} else {
 			// Process map data
 			values := strings.Split(line, ",")

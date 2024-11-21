@@ -40,16 +40,22 @@ func gameinit() {
 type Game struct {
 }
 
+var pscreen *ebiten.Image
+
 // Update method of the Game
 func (g *Game) Update() error {
+
 	checkMovementAndInput()
 	return nil
 }
 
 var selected int
+var needDrawLine bool
 
 // Draw method of the Game
 func (g *Game) Draw(screen *ebiten.Image) {
+
+	pscreen = screen
 
 	now := time.Now()
 	globalGameState.deltatime = now.Sub(globalGameState.lastUpdateTime).Seconds()
@@ -84,12 +90,26 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		drawPath(screen, globalGameState.currentmap.paths[i])
 	}
 
-	fmt.Println(globalGameState.currentmap.paths)
+	if addigPathC2 {
+		n, f := findNearestNode(createPos(cursor.float_x, cursor.float_y), globalGameState.currentmap.nodes)
+		fmt.Println(f)
+		if !f {
+			ebitenutil.DrawLine(screen,
+				float64(offsetsx(firstNode.pos.float_x)), float64(offsetsy(firstNode.pos.float_y)),
+				float64(offsetsx(cursor.float_x)), float64(offsetsy(cursor.float_y)), uidarkgray)
+
+		} else {
+			ebitenutil.DrawLine(screen,
+				float64(offsetsx(firstNode.pos.float_x)), float64(offsetsy(firstNode.pos.float_y)),
+				float64(offsetsx(n.pos.float_x)), float64(offsetsy(n.pos.float_y)), uidarkgray)
+		}
+	}
+
 	// var op *ebiten.DrawImageOptions
 	// screen.DrawImage(cutCam(screen, createPos(30, 30)), op)
 
 	fps := ebiten.CurrentFPS()
-	fpsText := fmt.Sprintf("FPS: %.2f", fps)
+	fpsText := fmt.Sprintf("FPS: %.2f | path creating: %t | adding path right now: %t", fps, globalGameState.pathcreatignmode, addigPath)
 	ebitenutil.DebugPrint(screen, fpsText)
 }
 

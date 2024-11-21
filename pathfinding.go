@@ -11,6 +11,7 @@ import (
 type node struct {
 	pos        pos
 	availables []node
+	id         int
 }
 
 type path struct {
@@ -19,12 +20,35 @@ type path struct {
 	cost  float32
 }
 
-func createPath(pointA, pointB node) path {
-	return path{nodeA: pointA, nodeB: pointB, cost: Distance(pointA.pos, pointB.pos)}
+func findNodeByID(id int) *node {
+	for _, node := range globalGameState.currentmap.nodes {
+		if node.id == id {
+			return &node
+		}
+	}
+	fmt.Printf("Warning: Node with ID %d not found\n", id)
+	return nil
+}
+func createNode(id int, pos pos) node {
+	return node{
+		id:  id,
+		pos: pos,
+	}
+}
+
+func createPath(nodeA *node, nodeB *node, cost float32) path {
+	if nodeA == nil || nodeB == nil {
+		fmt.Println("Error: Cannot create path with nil nodes")
+		return path{}
+	}
+	return path{
+		nodeA: *nodeA,
+		nodeB: *nodeB,
+		cost:  cost,
+	}
 }
 
 func drawPath(s *ebiten.Image, path path) {
-	fmt.Println("done4")
 	ebitenutil.DrawLine(s, float64(offsetsx(path.nodeA.pos.float_x)), float64(offsetsy(path.nodeA.pos.float_y)),
 		float64(offsetsx(path.nodeB.pos.float_x)), float64(offsetsy(path.nodeB.pos.float_y)), uidarkred)
 }
@@ -44,14 +68,20 @@ func findNearestNode(pos pos, nodes []node) (*node, bool) {
 	return nearest, nearest != nil
 }
 
+var addigPath bool
+var addigPathC2 bool
+var idForNode int
+var firstNode node
+
 func createPathOnClick() {
+
 	go func() {
 		var posA, posB pos
 		var nodeA, nodeB *node
 
-		fmt.Println("done1")
+		addigPath = true
 		for {
-			if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) && ebiten.IsKeyPressed(ebiten.KeyControlLeft) {
+			if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) && ebiten.IsKeyPressed(ebiten.KeyControl) {
 				posA = cursor
 				break
 			}
@@ -60,15 +90,24 @@ func createPathOnClick() {
 		// Check the nearest node for posA
 		nearestA, foundA := findNearestNode(posA, globalGameState.currentmap.nodes)
 		if foundA {
+			firstNode = *nearestA
+
 			nodeA = nearestA
+			nodeA.id = nearestA.id
 		} else {
 			nodeA = &node{pos: posA}
+			nodeA.id = idForNode
+			idForNode++
 			globalGameState.currentmap.nodes = append(globalGameState.currentmap.nodes, *nodeA)
+
+			firstNode = node{pos: posA}
 		}
 
-		fmt.Println("done2")
+		addigPathC2 = true
+
 		for {
-			if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) && ebiten.IsKeyPressed(ebiten.KeyControlRight) {
+
+			if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) && ebiten.IsKeyPressed(ebiten.KeyAlt) {
 				posB = cursor
 				break
 			}
@@ -78,15 +117,14 @@ func createPathOnClick() {
 		nearestB, foundB := findNearestNode(posB, globalGameState.currentmap.nodes)
 		if foundB {
 			nodeB = nearestB
+			nodeB.id = nearestB.id
 		} else {
 			nodeB = &node{pos: posB}
+			nodeB.id = idForNode + 1
+			idForNode++
 			globalGameState.currentmap.nodes = append(globalGameState.currentmap.nodes, *nodeB)
-		}
 
-		// Create a path between the two nodes
-		fmt.Println("done3")
-		path := path{nodeA: *nodeA, nodeB: *nodeB, cost: Distance(nodeA.pos, nodeB.pos)}
-		globalGameState.currentmap.paths = append(globalGameState.currentmap.paths, path)
+		}
 
 		// Update availability of nodes
 		if !nodeExistsInAvailables(nodeA, *nodeB) {
@@ -95,7 +133,14 @@ func createPathOnClick() {
 		if !nodeExistsInAvailables(nodeB, *nodeA) {
 			nodeB.availables = append(nodeB.availables, *nodeA)
 		}
+
+		// Create a path between the two nodes
+		path := path{nodeA: *nodeA, nodeB: *nodeB, cost: Distance(nodeA.pos, nodeB.pos)}
+		globalGameState.currentmap.paths = append(globalGameState.currentmap.paths, path)
+
+		addigPath, addigPathC2 = false, false
 	}()
+
 }
 
 // Check if a node exists in the availables list

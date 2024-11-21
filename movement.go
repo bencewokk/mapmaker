@@ -2,8 +2,6 @@ package main
 
 //
 import (
-	"fmt"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -57,7 +55,10 @@ func checkMovementAndInput() {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) && !ebiten.IsKeyPressed(ebiten.KeyShift) && !ebiten.IsKeyPressed(ebiten.KeyControl) {
 
 		if globalGameState.pathcreatignmode {
-			go createPathOnClick()
+			if !addigPath {
+				go createPathOnClick()
+			}
+
 		} else {
 			// Add a new sprite at the cursor position
 			globalGameState.currentmap.sprites = append(
@@ -75,5 +76,4 @@ func checkMovementAndInput() {
 		}
 	}
 
-	fmt.Println(globalGameState.pathcreatignmode)
 }
