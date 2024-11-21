@@ -80,6 +80,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	}
 
+	for i := 0; i < len(globalGameState.currentmap.paths); i++ {
+		drawPath(screen, globalGameState.currentmap.paths[i])
+	}
+
+	fmt.Println(globalGameState.currentmap.paths)
 	// var op *ebiten.DrawImageOptions
 	// screen.DrawImage(cutCam(screen, createPos(30, 30)), op)
 

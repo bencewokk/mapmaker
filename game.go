@@ -20,6 +20,9 @@ type gamemap struct {
 	width  int
 
 	sprites []sprite
+
+	paths []path
+	nodes []node
 }
 
 // read more in gamestate
@@ -76,6 +79,8 @@ type gamestate struct {
 	//
 	// this is used in the rendering, it offsets the drawing positions
 	camera camera
+
+	pathcreatignmode bool
 }
 
 func updateCamera() {
