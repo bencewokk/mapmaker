@@ -38,7 +38,7 @@ func createNode(id int, pos pos) node {
 
 func createPath(nodeA *node, nodeB *node, cost float32) path {
 	if nodeA == nil || nodeB == nil {
-		fmt.Println("Error: Cannot create path with nil nodes")
+		//	fmt.Println("Error: Cannot create path with nil nodes")
 		return path{}
 	}
 	return path{

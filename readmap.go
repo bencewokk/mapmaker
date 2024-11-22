@@ -58,6 +58,7 @@ func writeMapData() {
 		}
 	}
 
+	_, err = fmt.Fprintf(file, "---NODES---\n")
 	// Write nodes
 	for _, n := range globalGameState.currentmap.nodes {
 		_, err = fmt.Fprintf(file, "NODE,%d,%f,%f\n", n.id, n.pos.float_x, n.pos.float_y)
@@ -67,6 +68,7 @@ func writeMapData() {
 		}
 	}
 
+	_, err = fmt.Fprintf(file, "---PATHS---\n")
 	// Write paths
 	for _, p := range globalGameState.currentmap.paths {
 		_, err = fmt.Fprintf(file, "PATH,%d,%d,%f\n", p.nodeA.id, p.nodeB.id, p.cost)
@@ -93,6 +95,10 @@ func readMapData() {
 	isReadingSprites := false
 	isReadingNodes := false
 	isReadingPaths := false
+
+	if isReadingPaths {
+
+	}
 
 	// Clear existing data
 	globalGameState.currentmap.sprites = nil
@@ -156,7 +162,8 @@ func readMapData() {
 		} else if isReadingNodes {
 			// Process node data
 			values := strings.Split(line, ",")
-			if len(values) != 3 {
+			fmt.Println(values)
+			if len(values) != 4 {
 				fmt.Println("Invalid node data:", line)
 				continue
 			}
@@ -169,6 +176,9 @@ func readMapData() {
 			id, err := strconv.Atoi(strings.TrimSpace(values[1]))
 			if err != nil {
 				fmt.Println("Error parsing node ID:", err)
+				if idForNode < id {
+					idForNode = id + 1
+				}
 				continue
 			}
 
@@ -191,30 +201,30 @@ func readMapData() {
 			// Process path data
 			values := strings.Split(line, ",")
 			if len(values) != 4 {
-				fmt.Println("Invalid path data:", line)
+				// fmt.Println("Invalid path data:", line)
 				continue
 			}
 
 			if strings.TrimSpace(values[0]) != "PATH" {
-				fmt.Println("Unexpected path data:", line)
+				// fmt.Println("Unexpected path data:", line)
 				continue
 			}
 
 			nodeAID, err := strconv.Atoi(strings.TrimSpace(values[1]))
 			if err != nil {
-				fmt.Println("Error parsing path nodeA ID:", err)
+				// fmt.Println("Error parsing path nodeA ID:", err)
 				continue
 			}
 
 			nodeBID, err := strconv.Atoi(strings.TrimSpace(values[2]))
 			if err != nil {
-				fmt.Println("Error parsing path nodeB ID:", err)
+				// fmt.Println("Error parsing path nodeB ID:", err)
 				continue
 			}
 
 			cost, err := strconv.ParseFloat(strings.TrimSpace(values[3]), 32)
 			if err != nil {
-				fmt.Println("Error parsing path cost:", err)
+				// fmt.Println("Error parsing path cost:", err)
 				continue
 			}
 
