@@ -177,7 +177,7 @@ func readMapData() {
 			if err != nil {
 				fmt.Println("Error parsing node ID:", err)
 				if idForNode < id {
-					idForNode = id + 1
+					idForNode = id
 				}
 				continue
 			}

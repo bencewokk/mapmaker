@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -88,6 +89,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	for i := 0; i < len(globalGameState.currentmap.paths); i++ {
 		drawPath(screen, globalGameState.currentmap.paths[i])
+	}
+
+	for i := 0; i < len(globalGameState.currentmap.nodes); i++ {
+		n := globalGameState.currentmap.nodes[i]
+		ebitenutil.DebugPrintAt(screen, strconv.Itoa(n.id), int(offsetsx(n.pos.float_x)), int(offsetsy(n.pos.float_y)))
 	}
 
 	if addigPathC2 {

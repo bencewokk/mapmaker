@@ -120,7 +120,7 @@ func createPathOnClick() {
 			nodeB.id = nearestB.id
 		} else {
 			nodeB = &node{pos: posB}
-			nodeB.id = idForNode + 1
+			nodeB.id = idForNode
 			idForNode++
 			globalGameState.currentmap.nodes = append(globalGameState.currentmap.nodes, *nodeB)
 
